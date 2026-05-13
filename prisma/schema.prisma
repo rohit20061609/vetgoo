@@ -1,0 +1,408 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User and Authentication Models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+
+  // User type and profile
+  userType      UserType  @default(PET_OWNER)
+  profile       Profile?
+  
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  pets          Pet[]
+  appointments  Appointment[]
+  consultations Consultation[]
+  conversations ConversationSession[]
+  subscriptions Subscription[]
+  payments      Payment[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([userType])
+}
+
+model Profile {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Pet owner specific
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  country   String?
+  latitude  Float?
+  longitude Float?
+
+  // Professional info (for vets)
+  licenseNumber String?
+  specialization String?
+  yearsOfExperience Int?
+  bio       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String  @not
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Pet Management Models
+model Pet {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  type      PetType
+  breed     String?
+  age       Int?
+  weight    Float?
+  color     String?
+  microchipId String?
+  image     String?
+
+  medicalHistory MedicalRecord[]
+  appointments   Appointment[]
+  vaccinations   Vaccination[]
+  medications    Medication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([type])
+}
+
+// Appointment and Consultation Models
+model Appointment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  title     String
+  description String?
+  status    AppointmentStatus @default(SCHEDULED)
+  appointmentType AppointmentType @default(CHECKUP)
+  
+  scheduledFor DateTime
+  duration  Int @default(30) // in minutes
+  
+  veterinarian String?
+  clinic    String?
+  notes     String?
+
+  reminders Reminder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([petId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+model Consultation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String
+  description String?
+  status    ConsultationStatus @default(PENDING)
+  
+  veterinarian String?
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// Medical Records
+model MedicalRecord {
+  id        String   @id @default(cuid())
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  type      MedicalRecordType
+  title     String
+  description String?
+  
+  veterinarian String?
+  clinic    String?
+  diagnosis String?
+  treatment String?
+  notes     String?
+
+  attachments String[] // URLs to uploaded files
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([petId])
+  @@index([type])
+}
+
+model Vaccination {
+  id        String   @id @default(cuid())
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  name      String
+  date      DateTime
+  expiryDate DateTime?
+  veterinarian String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([petId])
+  @@index([expiryDate])
+}
+
+model Medication {
+  id        String   @id @default(cuid())
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  name      String
+  dosage    String
+  frequency String
+  startDate DateTime
+  endDate   DateTime?
+  reason    String?
+  sideEffects String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([petId])
+}
+
+// Reminders
+model Reminder {
+  id        String   @id @default(cuid())
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  title     String
+  message   String?
+  reminderTime DateTime
+  isRead    Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([appointmentId])
+  @@index([reminderTime])
+}
+
+// AI Conversation Models
+model ConversationSession {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String?
+  topic     String?
+  
+  messages  ConversationMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model ConversationMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   ConversationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  role      MessageRole
+  content   String @db.Text
+  
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+}
+
+// Payment Models
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan      SubscriptionPlan
+  status    SubscriptionStatus @default(ACTIVE)
+  
+  stripeSubscriptionId String?
+  stripeCustomerId String?
+  
+  startDate DateTime
+  endDate   DateTime?
+  renewalDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@unique([stripeSubscriptionId])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount    Float
+  currency  String  @default("USD")
+  status    PaymentStatus @default(PENDING)
+  
+  stripePaymentIntentId String? @unique
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// Enums
+enum UserType {
+  PET_OWNER
+  VETERINARIAN
+  ADMIN
+}
+
+enum PetType {
+  DOG
+  CAT
+  BIRD
+  RABBIT
+  HAMSTER
+  GUINEA_PIG
+  REPTILE
+  FISH
+  OTHER
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum AppointmentType {
+  CHECKUP
+  VACCINATION
+  SURGERY
+  DENTAL
+  GROOMING
+  BEHAVIORAL
+  FOLLOW_UP
+  EMERGENCY
+  OTHER
+}
+
+enum ConsultationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MedicalRecordType {
+  DIAGNOSIS
+  TREATMENT
+  LAB_RESULT
+  IMAGING
+  PRESCRIPTION
+  NOTE
+  REPORT
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+enum SubscriptionPlan {
+  FREE
+  BASIC
+  PREMIUM
+  PROFESSIONAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAUSED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}

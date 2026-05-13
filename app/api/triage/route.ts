@@ -1,0 +1,118 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import Anthropic from "@anthropic-ai/sdk";
+import { VET_SYSTEM_PROMPT } from "@/lib/ai/systemPrompt";
+
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { message, species, history } = body;
+
+    if (!message) {
+      return NextResponse.json(
+        { error: "Message is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Format conversation history for Claude
+    const messages = history.map((msg: any) => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content,
+    }));
+    messages.push({ role: "user" as const, content: message });
+
+    // Stream response from Claude
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          let fullResponse = "";
+
+          const response = await client.messages.stream({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 2048,
+            system: VET_SYSTEM_PROMPT,
+            messages: messages,
+          });
+
+          for await (const event of response) {
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              const chunk = event.delta.text;
+              fullResponse += chunk;
+              controller.enqueue(encoder.encode(chunk));
+            }
+          }
+
+          // Extract JSON from markdown code blocks if needed
+          let jsonResponse = fullResponse;
+          const jsonMatch = fullResponse.match(/```json\n([\s\S]*?)\n```/);
+          if (jsonMatch) {
+            jsonResponse = jsonMatch[1];
+          }
+
+          // Save triage session to database
+          try {
+            const parsedResponse = JSON.parse(jsonResponse);
+            await prisma.triageSession.create({
+              data: {
+                userId: user.id,
+                species: species,
+                symptoms: message,
+                severity: parsedResponse.severity,
+                aiResponse: parsedResponse,
+                source: "ai",
+              },
+            });
+          } catch (e) {
+            // If parsing fails, still continue - the response is already sent
+            console.error("Error parsing triage response:", e);
+          }
+
+          controller.close();
+        } catch (error) {
+          console.error("Triage error:", error);
+          controller.error(error);
+        }
+      },
+    });
+
+    return new NextResponse(stream, {
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  } catch (error) {
+    console.error("Triage error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
