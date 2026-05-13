@@ -1,0 +1,29 @@
+
+> vetgo@0.1.0 build
+> next build
+
+(node:6862) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspaces/vetgo/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspaces/vetgo/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+(node:6892) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspaces/vetgo/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspaces/vetgo/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> Build error occurred
+Error: Requested and resolved page mismatch: //(vet/)/vet/dashboard/page /(vet/)/vet/dashboard/page
+    at normalizePagePath (/workspaces/vetgo/node_modules/next/dist/shared/lib/page-path/normalize-page-path.js:20:19)
+    at /workspaces/vetgo/node_modules/next/dist/build/entries.js:398:73
+    at Array.map (<anonymous>)
+    at createEntrypoints (/workspaces/vetgo/node_modules/next/dist/build/entries.js:544:57)
+    at /workspaces/vetgo/node_modules/next/dist/build/webpack-build/impl.js:104:126
+    at Span.traceAsyncFn (/workspaces/vetgo/node_modules/next/dist/trace/trace.js:154:26)
+    at webpackBuildImpl (/workspaces/vetgo/node_modules/next/dist/build/webpack-build/impl.js:104:78)
+    at Object.workerMain (/workspaces/vetgo/node_modules/next/dist/build/webpack-build/impl.js:330:26) {
+  type: 'NormalizeError'
+}
