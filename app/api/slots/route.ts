@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
-      slots: slots.map((slot) => ({
+      slots: slots.map((slot: any) => ({
         id: slot.id,
         date: slot.date.toISOString(),
         startTime: slot.startTime,

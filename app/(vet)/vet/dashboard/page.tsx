@@ -125,7 +125,7 @@ export default function VetDashboard() {
         className="bg-gradient-to-r from-primary to-primary-dark text-white rounded-2xl p-8"
       >
         <h1 className="text-3xl font-bold mb-2">Welcome back, Dr. {session?.user?.name?.split(' ')[0]}!</h1>
-        <p className="text-primary-light">Here's your clinic activity for today</p>
+        <p className="text-primary-light">Here&apos;s your clinic activity for today</p>
       </motion.div>
 
       {/* Stats Grid */}

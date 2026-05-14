@@ -350,7 +350,7 @@ export default function Home() {
                   <div className="text-sm text-text-secondary">{testimonial.role}</div>
                 </div>
               </div>
-              <p className="text-text-secondary italic">"{testimonial.text}"</p>
+              <p className="text-text-secondary italic">&quot;{testimonial.text}&quot;</p>
               <div className="flex gap-1 mt-4">⭐⭐⭐⭐⭐</div>
             </motion.div>
           ))}

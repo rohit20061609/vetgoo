@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      animals: user.animals.map((animal) => ({
+      animals: user.animals.map((animal: any) => ({
         id: animal.id,
         name: animal.name,
         species: animal.species,

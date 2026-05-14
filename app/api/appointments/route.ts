@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
-      appointments: appointments.map((apt) => ({
+      appointments: appointments.map((apt: any) => ({
         id: apt.id,
         type: apt.type,
         status: apt.status,
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { vetId, slotId, type, animalId, notes } = body;
+    const { vetId, slotId, type, notes } = body;
 
     if (!vetId || !slotId || !type) {
       return NextResponse.json(
