@@ -5,7 +5,6 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const vetId = searchParams.get("vetId");
-    const type = searchParams.get("type") || "online";
     const daysAhead = parseInt(searchParams.get("daysAhead") || "7");
 
     if (!vetId) {
