@@ -7,12 +7,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
 });
 
-const resend = new Resend(process.env.RESEND_API_KEY || "");
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.text();
     const signature = req.headers.get("stripe-signature") || "";
+
+    // Initialize Resend only when needed and if API key is available
+    const resend = process.env.RESEND_API_KEY 
+      ? new Resend(process.env.RESEND_API_KEY)
+      : null;
 
     // Verify webhook signature
     let event: Stripe.Event;
@@ -34,55 +37,43 @@ export async function POST(req: NextRequest) {
 
       // Update payment status
       await prisma.payment.update({
-        where: { stripePaymentId: paymentIntent.id },
-        data: { status: "succeeded" },
+        where: { stripePaymentIntentId: paymentIntent.id },
+        data: { status: "COMPLETED" },
       });
 
       // Update appointment status
       const appointment = await prisma.appointment.update({
         where: { id: appointmentId },
         data: { status: "CONFIRMED" },
-        include: { user: true, vet: true, slot: true },
+        include: { user: true, pet: true },
       });
 
-      // Mark slot as booked
-      await prisma.availabilitySlot.update({
-        where: { id: appointment.slotId },
-        data: { isBooked: true },
-      });
-
-      // Send confirmation emails
-      try {
-        await resend.emails.send({
-          from: "VetGo <noreply@vetgo.app>",
-          to: appointment.user.email || "",
-          subject: "Your appointment with " + appointment.vet.clinicName,
-          html: `
-            <h2>Appointment Confirmed! ✓</h2>
-            <p>Your appointment with <strong>${appointment.vet.user.name}</strong> at <strong>${appointment.vet.clinicName}</strong> is confirmed.</p>
-            <p><strong>Date:</strong> ${appointment.slot.date.toLocaleDateString()}</p>
-            <p><strong>Time:</strong> ${appointment.slot.startTime} - ${appointment.slot.endTime}</p>
-            <p>Amount paid: ₹${appointment.paymentId ? 'Paid' : 'Pending'}</p>
-            <p>Join from your dashboard when the time comes.</p>
-          `,
-        });
-
-        // Send email to vet
-        await resend.emails.send({
-          from: "VetGo <noreply@vetgo.app>",
-          to: appointment.vet.user.email || "",
-          subject: "New appointment confirmed",
-          html: `
-            <h2>New Appointment</h2>
-            <p>Patient: <strong>${appointment.user.name}</strong></p>
-            <p>Date: <strong>${appointment.slot.date.toLocaleDateString()}</strong></p>
-            <p>Time: <strong>${appointment.slot.startTime}</strong></p>
-            <p>Type: <strong>${appointment.type}</strong></p>
-          `,
-        });
-      } catch (emailError) {
-        console.error("Error sending confirmation emails:", emailError);
-        // Don't fail the webhook if emails fail
+      // Send confirmation email to user (if Resend API key is configured)
+      if (resend) {
+        try {
+          await resend.emails.send({
+            from: "VetGo <noreply@vetgo.app>",
+            to: appointment.user.email || "",
+            subject: "Appointment Confirmed ✓",
+            html: `
+              <h2>Appointment Confirmed! ✓</h2>
+              <p>Your appointment is confirmed.</p>
+              <p><strong>Appointment Type:</strong> ${appointment.appointmentType}</p>
+              <p><strong>Date & Time:</strong> ${appointment.scheduledFor.toLocaleString()}</p>
+              <p><strong>Duration:</strong> ${appointment.duration} minutes</p>
+              <p><strong>Pet:</strong> ${appointment.pet.name}</p>
+              ${appointment.clinic ? `<p><strong>Clinic:</strong> ${appointment.clinic}</p>` : ""}
+              ${appointment.veterinarian ? `<p><strong>Veterinarian:</strong> ${appointment.veterinarian}</p>` : ""}
+              <p>Amount paid: ₹${paymentIntent.amount / 100}</p>
+              <p>Check your dashboard for more details.</p>
+            `,
+          });
+        } catch (emailError) {
+          console.error("Error sending confirmation email:", emailError);
+          // Don't fail the webhook if email fails
+        }
+      } else {
+        console.log("Resend API key not configured, skipping email notification");
       }
     }
 

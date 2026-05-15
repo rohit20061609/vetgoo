@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
-import { SessionProvider } from "next-auth/react";
-import { QueryProvider } from "@/lib/providers";
+import { Providers } from "@/lib/providers";
 import { ToastProvider, ToastViewport } from "@/components/ui/toaster";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -44,9 +43,9 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ToastProvider>
-          <SessionProvider session={session}>
-            <QueryProvider>{children}</QueryProvider>
-          </SessionProvider>
+          <Providers session={session}>
+            {children}
+          </Providers>
           <ToastViewport />
         </ToastProvider>
       </body>

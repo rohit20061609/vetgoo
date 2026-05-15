@@ -3,10 +3,9 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/db";
-import crypto from "crypto";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma) as any,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -27,7 +26,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         otp: { label: "OTP", type: "text" },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.otp) {
           throw new Error("Email and OTP are required");
         }
@@ -54,16 +53,17 @@ export const authOptions: NextAuthOptions = {
           });
         }
 
+        // Return user with guaranteed non-null email
         return {
           id: user.id,
-          email: user.email,
+          email: user.email || credentials.email,
           name: user.name,
-        };
+        } as any;
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -89,7 +89,7 @@ export const authOptions: NextAuthOptions = {
 };
 
 // Placeholder OTP verification function
-async function verifyOTP(email: string, otp: string): Promise<boolean> {
+async function verifyOTP(_email: string, _otp: string): Promise<boolean> {
   // TODO: Implement actual OTP verification logic
   // This could involve:
   // 1. Checking Redis/cache for stored OTP

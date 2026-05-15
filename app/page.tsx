@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ArrowRight, Heart, Map, Clock, Award, Smartphone, Shield } from 'lucide-react';
+import { ArrowRight, Heart } from 'lucide-react';
 
 export default function Home() {
   const { status } = useSession();

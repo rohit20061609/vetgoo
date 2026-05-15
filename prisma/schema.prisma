@@ -66,7 +66,7 @@ model Profile {
 
 model Account {
   id                 String  @id @default(cuid())
-  userId             String  @not
+  userId             String
   type               String
   provider           String
   providerAccountId  String

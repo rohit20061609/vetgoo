@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Phone, Star, Loader, Filter, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { MapPin, Star, Loader, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import dynamic from 'next/dynamic';
 
@@ -32,7 +32,6 @@ interface VetData {
 }
 
 const SPECIES_OPTIONS = ['Dog', 'Cat', 'Cattle', 'Buffalo', 'Goat', 'Sheep', 'Poultry', 'Horse', 'Pig', 'Rabbit'];
-const CONSULTATION_TYPES = ['online', 'visit', 'farm-visit'];
 
 export default function VetMapPage() {
   const mapRef = useRef<any>(null);

@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     // Fetch appointment
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
-      include: { user: true, vet: true },
+      include: { user: true, pet: true },
     });
 
     if (!appointment) {
@@ -46,20 +46,20 @@ export async function POST(req: NextRequest) {
       metadata: {
         appointmentId,
         userId: appointment.userId,
-        vetId: appointment.vetId,
+        petId: appointment.petId,
       },
-      description: `Veterinary consultation - ${appointment.vet.clinicName}`,
+      description: `Veterinary consultation - ${appointment.clinic || "VetGo Clinic"}`,
     });
 
     // Save payment to database
     await prisma.payment.create({
       data: {
         userId: appointment.userId,
-        appointmentId,
-        stripePaymentId: paymentIntent.id,
         amount,
         currency: "inr",
-        status: "pending",
+        status: "PENDING",
+        stripePaymentIntentId: paymentIntent.id,
+        description: `Veterinary consultation - ${appointment.clinic || "VetGo Clinic"}`,
       },
     });
 

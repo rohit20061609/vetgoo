@@ -22,11 +22,8 @@ export async function GET() {
     const appointments = await prisma.appointment.findMany({
       where: { userId: user.id },
       include: {
-        vet: {
-          include: { user: true },
-        },
-        slot: true,
-        payment: true,
+        pet: true,
+        reminders: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -34,15 +31,15 @@ export async function GET() {
     return NextResponse.json({
       appointments: appointments.map((apt: any) => ({
         id: apt.id,
-        type: apt.type,
+        type: apt.appointmentType,
         status: apt.status,
+        title: apt.title,
         notes: apt.notes,
-        vetName: apt.vet.user.name,
-        clinicName: apt.vet.clinicName,
-        date: apt.slot.date.toISOString(),
-        startTime: apt.slot.startTime,
-        endTime: apt.slot.endTime,
-        paymentStatus: apt.payment?.status,
+        petName: apt.pet.name,
+        veterinarian: apt.veterinarian,
+        clinic: apt.clinic,
+        scheduledFor: apt.scheduledFor.toISOString(),
+        duration: apt.duration,
         createdAt: apt.createdAt.toISOString(),
       })),
     });
@@ -72,23 +69,11 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { vetId, slotId, type, notes } = body;
+    const { petId, title, description, appointmentType, scheduledFor, duration, veterinarian, clinic, notes } = body;
 
-    if (!vetId || !slotId || !type) {
+    if (!petId || !title || !appointmentType || !scheduledFor) {
       return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Check if slot is available
-    const slot = await prisma.availabilitySlot.findUnique({
-      where: { id: slotId },
-    });
-
-    if (!slot || slot.isBooked) {
-      return NextResponse.json(
-        { error: "Slot is not available" },
+        { error: "Missing required fields: petId, title, appointmentType, scheduledFor" },
         { status: 400 }
       );
     }
@@ -97,11 +82,16 @@ export async function POST(req: NextRequest) {
     const appointment = await prisma.appointment.create({
       data: {
         userId: user.id,
-        vetId,
-        slotId,
-        type: type as "ONLINE" | "VIDEO" | "CLINIC_VISIT" | "FARM_VISIT",
-        status: "PENDING",
-        notes,
+        petId,
+        title,
+        description: description || null,
+        appointmentType,
+        scheduledFor: new Date(scheduledFor),
+        duration: duration || 30,
+        veterinarian: veterinarian || null,
+        clinic: clinic || null,
+        notes: notes || null,
+        status: "SCHEDULED",
       },
     });
 

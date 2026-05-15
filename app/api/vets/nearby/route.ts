@@ -27,12 +27,6 @@ export async function GET(req: NextRequest) {
     const lat = parseFloat(searchParams.get("lat") || "0");
     const lng = parseFloat(searchParams.get("lng") || "0");
     const radius = parseFloat(searchParams.get("radius") || "25"); // km
-    const species = searchParams.get("species");
-    const type = searchParams.get("type");
-    const maxFee = searchParams.get("maxFee")
-      ? parseInt(searchParams.get("maxFee") || "2000")
-      : 2000;
-    const availableToday = searchParams.get("availableToday") === "true";
 
     if (lat === 0 || lng === 0) {
       return NextResponse.json(
@@ -41,71 +35,52 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get all vets from database
-    let vets = await prisma.vetProfile.findMany({
-      include: {
-        user: true,
-        slots: {
-          where: {
-            date: availableToday
-              ? {
-                  gte: new Date(new Date().setHours(0, 0, 0, 0)),
-                  lt: new Date(new Date().setHours(23, 59, 59, 999)),
-                }
-              : undefined,
-            isBooked: false,
-          },
-        },
-      },
+    // Get all veterinarians from database
+    const vets = await prisma.user.findMany({
+      where: { userType: "VETERINARIAN" },
+      include: { profile: true },
     });
 
     // Calculate distance and filter
     const vetList = vets
-      .map((vet) => ({
+      .map((vet: any) => ({
         ...vet,
-        distance: haversineDistance(lat, lng, vet.latitude, vet.longitude),
+        distance: vet.profile?.latitude && vet.profile?.longitude 
+          ? haversineDistance(lat, lng, vet.profile.latitude, vet.profile.longitude)
+          : radius + 1, // Filter out vets without location
       }))
-      .filter((vet) => {
+      .filter((vet: any) => {
         // Distance filter
         if (vet.distance > radius) return false;
 
-        // Species filter
-        if (species && !vet.specialisations.includes(species)) return false;
-
-        // Fee filter
-        const fee =
-          type === "online"
-            ? vet.consultFeeOnline
-            : type === "visit"
-            ? vet.consultFeeVisit
-            : Math.min(vet.consultFeeOnline, vet.consultFeeVisit);
-        if (fee > maxFee) return false;
-
-        // Available today filter
-        if (availableToday && vet.slots.length === 0) return false;
+        // Fee filter (we don't have fee fields in the current schema)
+        // This would need to be added to Profile or a separate Pricing model
 
         return true;
       })
-      .sort((a, b) => a.distance - b.distance)
+      .sort((a: any, b: any) => a.distance - b.distance)
       .slice(0, 20); // Top 20 nearest
 
     return NextResponse.json({
-      vets: vetList.map((vet) => ({
+      vets: vetList.map((vet: any) => ({
         id: vet.id,
-        name: vet.user.name,
-        clinicName: vet.clinicName,
-        clinicAddress: vet.clinicAddress,
-        latitude: vet.latitude,
-        longitude: vet.longitude,
-        specialisations: vet.specialisations,
-        consultFeeOnline: vet.consultFeeOnline,
-        consultFeeVisit: vet.consultFeeVisit,
-        isVerified: vet.isVerified,
-        rating: vet.rating,
-        totalRatings: vet.totalRatings,
-        bio: vet.bio,
+        name: vet.name,
+        email: vet.email,
+        phone: vet.phone,
+        image: vet.image,
+        // Profile information
+        address: vet.profile?.address,
+        city: vet.profile?.city,
+        state: vet.profile?.state,
+        zipCode: vet.profile?.zipCode,
+        country: vet.profile?.country,
+        latitude: vet.profile?.latitude,
+        longitude: vet.profile?.longitude,
+        licenseNumber: vet.profile?.licenseNumber,
+        specialization: vet.profile?.specialization,
+        yearsOfExperience: vet.profile?.yearsOfExperience,
+        bio: vet.profile?.bio,
         distance: parseFloat(vet.distance.toFixed(2)),
-        availableSlots: vet.slots.length,
       })),
       count: vetList.length,
     });

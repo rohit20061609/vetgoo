@@ -75,19 +75,15 @@ export async function POST(req: NextRequest) {
             jsonResponse = jsonMatch[1];
           }
 
-          // Save triage session to database
+          // Note: TriageSession model does not exist in Prisma schema
+          // To save triage sessions, you would need to either:
+          // 1. Add a TriageSession model to prisma/schema.prisma
+          // 2. Or use ConversationSession for storing conversations
+          // For now, the response is streamed but not persisted
           try {
-            const parsedResponse = JSON.parse(jsonResponse);
-            await prisma.triageSession.create({
-              data: {
-                userId: user.id,
-                species: species,
-                symptoms: message,
-                severity: parsedResponse.severity,
-                aiResponse: parsedResponse,
-                source: "ai",
-              },
-            });
+            JSON.parse(jsonResponse);
+            // Optionally log the response for analytics
+            console.log("Triage response generated for user:", user.id, "Pet type:", species);
           } catch (e) {
             // If parsing fails, still continue - the response is already sent
             console.error("Error parsing triage response:", e);

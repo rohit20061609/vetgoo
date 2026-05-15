@@ -19,10 +19,8 @@ const config = {
     extend: {
       colors: {
         // VetGo Brand Colors
-        "primary": "#1A6B4A",
         "primary-light": "#E8F5EE",
         "primary-dark": "#0F3D2B",
-        "accent": "#F5A623",
         "accent-light": "#FFF3DC",
         "danger": "#E53E3E",
         "neutral": "#F7F8FA",

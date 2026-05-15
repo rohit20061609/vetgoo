@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     let conversation = null;
-    let messages = [];
+    let messages: any[] = [];
 
     if (conversationId) {
       conversation = await prisma.conversationSession.findUnique({

@@ -124,7 +124,7 @@ export default function TriagePage() {
 
       mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        // const blob = new Blob(chunks, { type: 'audio/webm' });
         // TODO: Send audio to speech-to-text API
         stream.getTracks().forEach(track => track.stop());
         setIsRecording(false);

@@ -14,7 +14,7 @@ export async function GET() {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: {
-        animals: true,
+        pets: true,
       },
     });
 
@@ -23,14 +23,14 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      animals: user.animals.map((animal: any) => ({
+      animals: user.pets.map((animal: any) => ({
         id: animal.id,
         name: animal.name,
-        species: animal.species,
+        type: animal.type,
         breed: animal.breed,
-        age: animal.ageMonths,
-        weight: animal.weightKg,
-        photoUrl: animal.photoUrl,
+        age: animal.age,
+        weight: animal.weight,
+        image: animal.image,
       })),
     });
   } catch (error) {
@@ -59,24 +59,24 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, species, breed, ageMonths, weightKg, photoUrl } = body;
+    const { name, type, breed, age, weight, image } = body;
 
-    if (!name || !species) {
+    if (!name || !type) {
       return NextResponse.json(
-        { error: "Name and species are required" },
+        { error: "Name and type are required" },
         { status: 400 }
       );
     }
 
-    const animal = await prisma.animal.create({
+    const animal = await prisma.pet.create({
       data: {
         userId: user.id,
         name,
-        species,
+        type,
         breed: breed || null,
-        ageMonths: ageMonths || null,
-        weightKg: weightKg || null,
-        photoUrl: photoUrl || null,
+        age: age || null,
+        weight: weight || null,
+        image: image || null,
       },
     });
 
@@ -84,10 +84,10 @@ export async function POST(req: NextRequest) {
       animal: {
         id: animal.id,
         name: animal.name,
-        species: animal.species,
+        type: animal.type,
         breed: animal.breed,
-        age: animal.ageMonths,
-        weight: animal.weightKg,
+        age: animal.age,
+        weight: animal.weight,
       },
     });
   } catch (error) {

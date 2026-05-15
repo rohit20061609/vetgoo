@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const vetId = searchParams.get("vetId");
-    const daysAhead = parseInt(searchParams.get("daysAhead") || "7");
 
     if (!vetId) {
       return NextResponse.json(
@@ -14,32 +12,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get slots for the next N days
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + daysAhead);
-
-    const slots = await prisma.availabilitySlot.findMany({
-      where: {
-        vetId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      orderBy: {
-        date: "asc",
-      },
-    });
-
+    // NOTE: AvailabilitySlot model does not exist in Prisma schema
+    // To implement availability slots, you would need to:
+    // 1. Add an AvailabilitySlot model to prisma/schema.prisma
+    // 2. Or store availability in a separate service
+    // For now, returning empty slots
+    
     return NextResponse.json({
-      slots: slots.map((slot: any) => ({
-        id: slot.id,
-        date: slot.date.toISOString(),
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        isBooked: slot.isBooked,
-      })),
+      slots: [],
+      message: "AvailabilitySlot model not implemented yet",
     });
   } catch (error) {
     console.error("Error fetching slots:", error);
@@ -62,25 +43,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const slot = await prisma.availabilitySlot.create({
-      data: {
-        vetId,
-        date: new Date(date),
-        startTime,
-        endTime,
-        isBooked: false,
-      },
-    });
-
+    // NOTE: AvailabilitySlot model does not exist in Prisma schema
+    // To implement availability slots, you would need to:
+    // 1. Add an AvailabilitySlot model to prisma/schema.prisma
+    // 2. Or store availability in a separate service
+    
     return NextResponse.json({
-      slot: {
-        id: slot.id,
-        date: slot.date.toISOString(),
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        isBooked: slot.isBooked,
-      },
-    });
+      error: "AvailabilitySlot model not implemented yet",
+      message: "Please add AvailabilitySlot to your Prisma schema",
+    }, { status: 501 });
   } catch (error) {
     console.error("Error creating slot:", error);
     return NextResponse.json(
