@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { slotsSchema } from "@/lib/schemas";
+import { z } from "zod";
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,8 +24,8 @@ export async function GET(req: NextRequest) {
       slots: [],
       message: "AvailabilitySlot model not implemented yet",
     });
-  } catch (error) {
-    console.error("Error fetching slots:", error);
+  } catch (error: any) {
+    console.error("Error fetching slots:", error?.message || error);
     return NextResponse.json(
       { error: "Failed to fetch slots" },
       { status: 500 }
@@ -34,14 +36,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { vetId, date, startTime, endTime } = body;
 
-    if (!vetId || !date || !startTime || !endTime) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+    // Validate input with schema
+    const validated = slotsSchema.parse(body);
 
     // NOTE: AvailabilitySlot model does not exist in Prisma schema
     // To implement availability slots, you would need to:
@@ -52,8 +49,16 @@ export async function POST(req: NextRequest) {
       error: "AvailabilitySlot model not implemented yet",
       message: "Please add AvailabilitySlot to your Prisma schema",
     }, { status: 501 });
-  } catch (error) {
-    console.error("Error creating slot:", error);
+  } catch (error: any) {
+    console.error("Error creating slot:", error?.message || error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to create slot" },
       { status: 500 }

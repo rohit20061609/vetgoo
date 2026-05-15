@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { nearbyVetsSchema } from "@/lib/schemas";
+import { z } from "zod";
 
 // Haversine formula to calculate distance between two coordinates
 function haversineDistance(
@@ -24,11 +26,18 @@ function haversineDistance(
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const lat = parseFloat(searchParams.get("lat") || "0");
-    const lng = parseFloat(searchParams.get("lng") || "0");
-    const radius = parseFloat(searchParams.get("radius") || "25"); // km
+    const lat = searchParams.get("lat");
+    const lng = searchParams.get("lng");
+    const radius = searchParams.get("radius");
 
-    if (lat === 0 || lng === 0) {
+    // Validate query parameters with schema
+    const validated = nearbyVetsSchema.parse({
+      lat: lat ? parseFloat(lat) : 0,
+      lng: lng ? parseFloat(lng) : 0,
+      radius: radius ? parseFloat(radius) : 25,
+    });
+
+    if (validated.lat === 0 || validated.lng === 0) {
       return NextResponse.json(
         { error: "Valid latitude and longitude required" },
         { status: 400 }
@@ -46,16 +55,12 @@ export async function GET(req: NextRequest) {
       .map((vet: any) => ({
         ...vet,
         distance: vet.profile?.latitude && vet.profile?.longitude 
-          ? haversineDistance(lat, lng, vet.profile.latitude, vet.profile.longitude)
-          : radius + 1, // Filter out vets without location
+          ? haversineDistance(validated.lat, validated.lng, vet.profile.latitude, vet.profile.longitude)
+          : validated.radius + 1, // Filter out vets without location
       }))
       .filter((vet: any) => {
         // Distance filter
-        if (vet.distance > radius) return false;
-
-        // Fee filter (we don't have fee fields in the current schema)
-        // This would need to be added to Profile or a separate Pricing model
-
+        if (vet.distance > validated.radius) return false;
         return true;
       })
       .sort((a: any, b: any) => a.distance - b.distance)
@@ -65,10 +70,11 @@ export async function GET(req: NextRequest) {
       vets: vetList.map((vet: any) => ({
         id: vet.id,
         name: vet.name,
-        email: vet.email,
+        // SECURITY: Don't expose email without explicit need
+        // email: vet.email,
         phone: vet.phone,
         image: vet.image,
-        // Profile information
+        // Profile information (public-facing only)
         address: vet.profile?.address,
         city: vet.profile?.city,
         state: vet.profile?.state,
@@ -84,8 +90,16 @@ export async function GET(req: NextRequest) {
       })),
       count: vetList.length,
     });
-  } catch (error) {
-    console.error("Error fetching nearby vets:", error);
+  } catch (error: any) {
+    console.error("Error fetching nearby vets:", error?.message || error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to fetch vets" },
       { status: 500 }

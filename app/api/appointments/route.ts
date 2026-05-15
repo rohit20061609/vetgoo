@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { appointmentSchema } from "@/lib/schemas";
+import { z } from "zod";
 
 export async function GET() {
   try {
@@ -43,8 +45,8 @@ export async function GET() {
         createdAt: apt.createdAt.toISOString(),
       })),
     });
-  } catch (error) {
-    console.error("Error fetching appointments:", error);
+  } catch (error: any) {
+    console.error("Error fetching appointments:", error?.message || error);
     return NextResponse.json(
       { error: "Failed to fetch appointments" },
       { status: 500 }
@@ -69,12 +71,19 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { petId, title, description, appointmentType, scheduledFor, duration, veterinarian, clinic, notes } = body;
 
-    if (!petId || !title || !appointmentType || !scheduledFor) {
+    // Validate input with schema
+    const validated = appointmentSchema.parse(body);
+
+    // Verify the pet belongs to the user
+    const pet = await prisma.pet.findUnique({
+      where: { id: validated.petId },
+    });
+
+    if (!pet || pet.userId !== user.id) {
       return NextResponse.json(
-        { error: "Missing required fields: petId, title, appointmentType, scheduledFor" },
-        { status: 400 }
+        { error: "Forbidden: Pet not found or does not belong to user" },
+        { status: 403 }
       );
     }
 
@@ -82,15 +91,15 @@ export async function POST(req: NextRequest) {
     const appointment = await prisma.appointment.create({
       data: {
         userId: user.id,
-        petId,
-        title,
-        description: description || null,
-        appointmentType,
-        scheduledFor: new Date(scheduledFor),
-        duration: duration || 30,
-        veterinarian: veterinarian || null,
-        clinic: clinic || null,
-        notes: notes || null,
+        petId: validated.petId,
+        title: validated.title,
+        description: validated.description,
+        appointmentType: validated.appointmentType,
+        scheduledFor: new Date(validated.scheduledFor),
+        duration: validated.duration,
+        veterinarian: validated.veterinarian,
+        clinic: validated.clinic,
+        notes: validated.notes,
         status: "SCHEDULED",
       },
     });
@@ -99,8 +108,16 @@ export async function POST(req: NextRequest) {
       appointmentId: appointment.id,
       status: appointment.status,
     });
-  } catch (error) {
-    console.error("Error creating appointment:", error);
+  } catch (error: any) {
+    console.error("Error creating appointment:", error?.message || error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to create appointment" },
       { status: 500 }

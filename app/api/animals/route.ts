@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { petSchema } from "@/lib/schemas";
+import { z } from "zod";
 
 export async function GET() {
   try {
@@ -33,8 +35,8 @@ export async function GET() {
         image: animal.image,
       })),
     });
-  } catch (error) {
-    console.error("Error fetching animals:", error);
+  } catch (error: any) {
+    console.error("Error fetching animals:", error?.message || error);
     return NextResponse.json(
       { error: "Failed to fetch animals" },
       { status: 500 }
@@ -59,24 +61,14 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, type, breed, age, weight, image } = body;
 
-    if (!name || !type) {
-      return NextResponse.json(
-        { error: "Name and type are required" },
-        { status: 400 }
-      );
-    }
+    // Validate input with schema
+    const validated = petSchema.parse(body);
 
     const animal = await prisma.pet.create({
       data: {
         userId: user.id,
-        name,
-        type,
-        breed: breed || null,
-        age: age || null,
-        weight: weight || null,
-        image: image || null,
+        ...validated,
       },
     });
 
@@ -90,8 +82,16 @@ export async function POST(req: NextRequest) {
         weight: animal.weight,
       },
     });
-  } catch (error) {
-    console.error("Error creating animal:", error);
+  } catch (error: any) {
+    console.error("Error creating animal:", error?.message || error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to create animal" },
       { status: 500 }
