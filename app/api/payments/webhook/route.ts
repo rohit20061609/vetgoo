@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       if (resend) {
         try {
           await resend.emails.send({
-            from: "VetGo <noreply@vetgo.app>",
+            from: "VetGo <noreply@vetgoo.in>",
             to: appointment.user.email || "",
             subject: "Appointment Confirmed ✓",
             html: `

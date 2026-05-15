@@ -305,7 +305,7 @@ curl -X POST http://localhost:3000/api/chat/stream \
 
 - GitHub Discussions
 - GitHub Issues
-- Email: dev@vetgo.app
+- Email: dev@vetgoo.in
 
 ## License
 

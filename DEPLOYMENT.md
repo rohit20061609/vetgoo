@@ -22,7 +22,7 @@ createdb vetgo
 
 Update `.env.local`:
 ```env
-DATABASE_URL="postgresql://postgres:password@localhost:5432/vetgo"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/vetgo_db"
 ```
 
 #### 4. Initialize Prisma
@@ -359,4 +359,4 @@ Check Anthropic API rate limits and quotas.
 
 - Documentation: [README.md](../README.md)
 - Issues: GitHub Issues
-- Email: support@vetgo.app
+- Email: support@vetgoo.in

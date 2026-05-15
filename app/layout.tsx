@@ -17,13 +17,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://vetgo.app",
+    url: "https://vetgoo.in",
     siteName: "VetGo",
     title: "VetGo - Your Pet's Health Companion",
     description: "Comprehensive pet healthcare management platform",
     images: [
       {
-        url: "https://vetgo.app/og-image.jpg",
+        url: "https://vetgoo.in/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "VetGo",
