@@ -1,0 +1,101 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "env": [
+    {
+      "key": "DATABASE_URL",
+      "description": "PostgreSQL database connection string",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "NEXTAUTH_SECRET",
+      "description": "NextAuth secret (min 32 characters)",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "NEXTAUTH_URL",
+      "description": "NextAuth URL for OAuth callbacks",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "GOOGLE_CLIENT_ID",
+      "description": "Google OAuth client ID",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "GOOGLE_CLIENT_SECRET",
+      "description": "Google OAuth client secret",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "STRIPE_SECRET_KEY",
+      "description": "Stripe secret API key",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+      "description": "Stripe publishable API key (public)",
+      "value": "",
+      "type": "plain"
+    },
+    {
+      "key": "STRIPE_WEBHOOK_SECRET",
+      "description": "Stripe webhook signing secret",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "ANTHROPIC_API_KEY",
+      "description": "Anthropic Claude API key for AI features",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "UPLOADTHING_SECRET",
+      "description": "Uploadthing API secret",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "UPLOADTHING_APP_ID",
+      "description": "Uploadthing app ID",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "RESEND_API_KEY",
+      "description": "Resend email service API key",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "NEXT_PUBLIC_APP_URL",
+      "description": "Public app URL (will be set to Vercel deployment URL)",
+      "value": "",
+      "type": "plain"
+    }
+  ],
+  "buildOutputDirectory": ".next",
+  "redirects": [],
+  "rewrites": [],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
+      ]
+    }
+  ]
+}

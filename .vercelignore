@@ -1,0 +1,72 @@
+# Development files
+.env
+.env.local
+.env.*.local
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDE and editors
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Package manager
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build artifacts
+.next
+out
+dist
+build
+
+# Testing
+.turbo
+coverage
+__tests__
+e2e
+jest.config.js
+jest.setup.js
+playwright.config.ts
+
+# Documentation
+README.md
+DEPLOYMENT.md
+ARCHITECTURE.md
+CHECKLIST.md
+CONTRIBUTING.md
+IMPLEMENTATION_SUMMARY.md
+PROJECT_SETUP.md
+SECURITY.md
+TESTING.md
+
+# Configuration files (not needed in deployment)
+.eslintrc.json
+tsconfig.json
+postcss.config.js
+tailwind.config.ts
+next-env.d.ts
+
+# Docker files (not needed for Vercel)
+Dockerfile
+Dockerfile.dev
+docker-compose.yml
+
+# Setup scripts
+setup.sh
+
+# Logs
+build.log
+
+# Prisma
+prisma/dev.db
