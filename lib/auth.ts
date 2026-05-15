@@ -18,7 +18,8 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-      allowDangerousEmailAccountLinking: true,
+      // SECURITY: Disabled - prevents account linking attacks
+      allowDangerousEmailAccountLinking: false,
     }),
     CredentialsProvider({
       name: "Email OTP",
@@ -31,8 +32,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and OTP are required");
         }
 
-        // Verify OTP (implement your OTP verification logic)
-        // This is a placeholder - implement actual OTP verification
+        // Verify OTP
         const isValid = await verifyOTP(credentials.email, credentials.otp);
 
         if (!isValid) {
@@ -86,14 +86,59 @@ export const authOptions: NextAuthOptions = {
       console.log("User signed out");
     },
   },
+  // SECURITY: Configure secure cookies for production
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // HTTPS-only in production
+        sameSite: "lax",
+        path: "/",
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      },
+    },
+    callbackUrl: {
+      name: `__Secure-next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+      },
+    },
+    csrfToken: {
+      name: `__Host-next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+      },
+    },
+    pkceCodeVerifier: {
+      name: `__Secure-next-auth.pkce.code_verifier`,
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 15 * 60, // 15 minutes
+      },
+    },
+  },
 };
 
-// Placeholder OTP verification function
+// OTP verification function - MUST be implemented with real logic
+// This is a placeholder that should connect to your OTP storage (Redis, DB, etc.)
 async function verifyOTP(_email: string, _otp: string): Promise<boolean> {
-  // TODO: Implement actual OTP verification logic
-  // This could involve:
-  // 1. Checking Redis/cache for stored OTP
-  // 2. Verifying expiration time
-  // 3. Comparing provided OTP with stored value
-  return true;
+  // TODO: Implement actual OTP verification logic:
+  // 1. Look up OTP record in Redis or database by email
+  // 2. Check if OTP matches and hasn't expired (typically 5-10 min)
+  // 3. Delete the OTP record after verification (one-time use)
+  // 4. Return true only if valid and not expired, false otherwise
+  
+  // For now, always return false to prevent unauthorized access
+  // Remove this line once OTP service is implemented
+  return false;
 }

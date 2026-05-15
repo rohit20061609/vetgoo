@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import Stripe from "stripe";
 import { Resend } from "resend";
+import { z } from "zod";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
+});
+
+// Schema for validating payment metadata
+const paymentMetadataSchema = z.object({
+  appointmentId: z.string(),
+  userId: z.string().optional(),
+  petId: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -33,37 +41,89 @@ export async function POST(req: NextRequest) {
     // Handle payment_intent.succeeded
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      const appointmentId = paymentIntent.metadata.appointmentId as string;
+      
+      // Validate metadata structure
+      let metadata;
+      try {
+        metadata = paymentMetadataSchema.parse(paymentIntent.metadata);
+      } catch (err) {
+        console.error("Invalid payment metadata:", err);
+        return NextResponse.json({ error: "Invalid metadata" }, { status: 400 });
+      }
+
+      const appointmentId = metadata.appointmentId;
+
+      // SECURITY: Check if payment already processed (idempotency)
+      const existingPayment = await prisma.payment.findUnique({
+        where: { stripePaymentIntentId: paymentIntent.id },
+      });
+
+      if (existingPayment && existingPayment.status === "COMPLETED") {
+        // Payment already processed - return success to acknowledge webhook
+        console.log(`Payment ${paymentIntent.id} already processed, skipping duplicate`);
+        return NextResponse.json({ received: true });
+      }
+
+      // Fetch appointment and validate
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: { user: true, pet: true },
+      });
+
+      if (!appointment) {
+        console.error(`Appointment ${appointmentId} not found for payment ${paymentIntent.id}`);
+        return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+      }
+
+      // SECURITY: Validate amount and currency match
+      const CONSULTATION_PRICE = 500; // in paise (₹5.00)
+      if (paymentIntent.amount !== CONSULTATION_PRICE) {
+        console.error(`Amount mismatch: expected ${CONSULTATION_PRICE}, got ${paymentIntent.amount}`);
+        return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
+      }
+
+      if (paymentIntent.currency !== "inr") {
+        console.error(`Currency mismatch: expected inr, got ${paymentIntent.currency}`);
+        return NextResponse.json({ error: "Currency mismatch" }, { status: 400 });
+      }
 
       // Update payment status
-      await prisma.payment.update({
+      await prisma.payment.upsert({
         where: { stripePaymentIntentId: paymentIntent.id },
-        data: { status: "COMPLETED" },
+        create: {
+          userId: appointment.userId,
+          amount: CONSULTATION_PRICE / 100,
+          currency: "inr",
+          status: "COMPLETED",
+          stripePaymentIntentId: paymentIntent.id,
+          description: `Veterinary consultation - ${appointment.clinic || "VetGo Clinic"}`,
+        },
+        update: { status: "COMPLETED" },
       });
 
       // Update appointment status
-      const appointment = await prisma.appointment.update({
+      const updatedAppointment = await prisma.appointment.update({
         where: { id: appointmentId },
         data: { status: "CONFIRMED" },
         include: { user: true, pet: true },
       });
 
       // Send confirmation email to user (if Resend API key is configured)
-      if (resend) {
+      if (resend && updatedAppointment.user.email) {
         try {
           await resend.emails.send({
             from: "VetGo <noreply@vetgoo.in>",
-            to: appointment.user.email || "",
+            to: updatedAppointment.user.email,
             subject: "Appointment Confirmed ✓",
             html: `
               <h2>Appointment Confirmed! ✓</h2>
               <p>Your appointment is confirmed.</p>
-              <p><strong>Appointment Type:</strong> ${appointment.appointmentType}</p>
-              <p><strong>Date & Time:</strong> ${appointment.scheduledFor.toLocaleString()}</p>
-              <p><strong>Duration:</strong> ${appointment.duration} minutes</p>
-              <p><strong>Pet:</strong> ${appointment.pet.name}</p>
-              ${appointment.clinic ? `<p><strong>Clinic:</strong> ${appointment.clinic}</p>` : ""}
-              ${appointment.veterinarian ? `<p><strong>Veterinarian:</strong> ${appointment.veterinarian}</p>` : ""}
+              <p><strong>Appointment Type:</strong> ${updatedAppointment.appointmentType}</p>
+              <p><strong>Date & Time:</strong> ${updatedAppointment.scheduledFor.toLocaleString()}</p>
+              <p><strong>Duration:</strong> ${updatedAppointment.duration} minutes</p>
+              <p><strong>Pet:</strong> ${updatedAppointment.pet.name}</p>
+              ${updatedAppointment.clinic ? `<p><strong>Clinic:</strong> ${updatedAppointment.clinic}</p>` : ""}
+              ${updatedAppointment.veterinarian ? `<p><strong>Veterinarian:</strong> ${updatedAppointment.veterinarian}</p>` : ""}
               <p>Amount paid: ₹${paymentIntent.amount / 100}</p>
               <p>Check your dashboard for more details.</p>
             `,
@@ -72,14 +132,12 @@ export async function POST(req: NextRequest) {
           console.error("Error sending confirmation email:", emailError);
           // Don't fail the webhook if email fails
         }
-      } else {
-        console.log("Resend API key not configured, skipping email notification");
       }
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook error:", error);
+    console.error("Webhook error:", error?.message || error);
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }

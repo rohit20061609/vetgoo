@@ -4,9 +4,9 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be at most 100 characters"),
+  email: z.string().email("Invalid email address").toLowerCase(),
+  password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password too long"),
 });
 
 export async function POST(req: NextRequest) {
@@ -28,16 +28,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hash password
-    await bcrypt.hash(password, 10);
+    // Hash password with salt rounds (10 is standard)
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with hashed password
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        // Store hashed password in a custom field if needed
-        // For now, this is handled by NextAuth's adapter
+        password: hashedPassword,
       },
     });
 
@@ -46,7 +45,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    console.error("Registration error:", error);
+    console.error("Registration error:", error?.message || error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

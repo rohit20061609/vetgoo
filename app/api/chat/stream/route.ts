@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import Anthropic from "@anthropic-ai/sdk";
 import { VETERINARY_SYSTEM_PROMPT } from "@/lib/ai";
+import { chatMessageSchema } from "@/lib/schemas";
+import { z } from "zod";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -18,14 +20,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { message, conversationId } = body;
 
-    if (!message) {
-      return NextResponse.json(
-        { error: "Message is required" },
-        { status: 400 }
-      );
-    }
+    // Validate input with schema
+    const { message, conversationId } = chatMessageSchema.parse(body);
 
     // Get or create conversation
     const user = await prisma.user.findUnique({
@@ -112,6 +109,7 @@ export async function POST(req: NextRequest) {
 
           controller.close();
         } catch (error) {
+          console.error("Chat streaming error:", error?.message || error);
           controller.error(error);
         }
       },
@@ -124,8 +122,16 @@ export async function POST(req: NextRequest) {
         Connection: "keep-alive",
       },
     });
-  } catch (error) {
-    console.error("Chat error:", error);
+  } catch (error: any) {
+    console.error("Chat error:", error?.message || error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
