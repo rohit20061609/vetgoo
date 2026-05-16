@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import { Providers } from "@/lib/providers";
 import { ToastProvider, ToastViewport } from "@/components/ui/toaster";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "VetGo - Your Pet's Health Companion",
@@ -41,7 +38,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className="antialiased">
         <ToastProvider>
           <Providers session={session}>
             {children}
