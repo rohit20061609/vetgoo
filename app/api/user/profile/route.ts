@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest) {
       } : null,
     });
   } catch (error: any) {
-    console.error("Get user error:", error?.message || error);
+    console.error("Get user error:", error instanceof Error ? error.message : String(error));
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -124,7 +124,7 @@ export async function PATCH(req: NextRequest) {
       } : null,
     });
   } catch (error: any) {
-    console.error("Update user error:", error?.message || error);
+    console.error("Update user error:", error instanceof Error ? error.message : String(error));
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

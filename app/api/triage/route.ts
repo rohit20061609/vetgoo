@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
 
           controller.close();
         } catch (error) {
-          console.error("Triage error:", error?.message || error);
+          console.error("Triage error:", error instanceof Error ? error.message : String(error));
           controller.error(error);
         }
       },
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("Triage error:", error?.message || error);
+    console.error("Triage error:", error instanceof Error ? error.message : String(error));
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

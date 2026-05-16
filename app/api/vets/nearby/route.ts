@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
       count: vetList.length,
     });
   } catch (error: any) {
-    console.error("Error fetching nearby vets:", error?.message || error);
+    console.error("Error fetching nearby vets:", error instanceof Error ? error.message : String(error));
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

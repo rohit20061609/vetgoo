@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       amount,
     });
   } catch (error: any) {
-    console.error("Payment creation error:", error?.message || error);
+    console.error("Payment creation error:", error instanceof Error ? error.message : String(error));
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -36,7 +36,7 @@ export async function GET() {
       })),
     });
   } catch (error: any) {
-    console.error("Error fetching animals:", error?.message || error);
+    console.error("Error fetching animals:", error instanceof Error ? error.message : String(error));
     return NextResponse.json(
       { error: "Failed to fetch animals" },
       { status: 500 }
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("Error creating animal:", error?.message || error);
+    console.error("Error creating animal:", error instanceof Error ? error.message : String(error));
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

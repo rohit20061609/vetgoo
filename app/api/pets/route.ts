@@ -28,7 +28,7 @@ export async function GET(_req: NextRequest) {
 
     return NextResponse.json(pets);
   } catch (error: any) {
-    console.error("Get pets error:", error?.message || error);
+    console.error("Get pets error:", error instanceof Error ? error.message : String(error));
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(pet, { status: 201 });
   } catch (error: any) {
-    console.error("Create pet error:", error?.message || error);
+    console.error("Create pet error:", error instanceof Error ? error.message : String(error));
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

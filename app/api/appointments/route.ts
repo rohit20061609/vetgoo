@@ -46,7 +46,7 @@ export async function GET() {
       })),
     });
   } catch (error: any) {
-    console.error("Error fetching appointments:", error?.message || error);
+    console.error("Error fetching appointments:", error instanceof Error ? error.message : String(error));
     return NextResponse.json(
       { error: "Failed to fetch appointments" },
       { status: 500 }
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       status: appointment.status,
     });
   } catch (error: any) {
-    console.error("Error creating appointment:", error?.message || error);
+    console.error("Error creating appointment:", error instanceof Error ? error.message : String(error));
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
