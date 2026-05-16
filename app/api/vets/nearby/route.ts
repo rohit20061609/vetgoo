@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { nearbyVetsSchema } from "@/lib/schemas";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 // Haversine formula to calculate distance between two coordinates
 function haversineDistance(
   lat1: number,

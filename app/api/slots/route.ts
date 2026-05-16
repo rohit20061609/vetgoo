@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { slotsSchema } from "@/lib/schemas";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
