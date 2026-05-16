@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://vetgoo.in"),
   title: "VetGo - Your Pet's Health Companion",
   description:
     "Comprehensive pet healthcare management platform with AI-powered veterinary assistance",
