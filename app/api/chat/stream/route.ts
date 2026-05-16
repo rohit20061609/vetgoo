@@ -11,6 +11,14 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -109,7 +117,7 @@ export async function POST(req: NextRequest) {
 
           controller.close();
         } catch (error) {
-          console.error("Chat streaming error:", error?.message || error);
+          console.error("Chat streaming error:", getErrorMessage(error));
           controller.error(error);
         }
       },
@@ -122,8 +130,8 @@ export async function POST(req: NextRequest) {
         Connection: "keep-alive",
       },
     });
-  } catch (error: any) {
-    console.error("Chat error:", error?.message || error);
+  } catch (error: unknown) {
+    console.error("Chat error:", getErrorMessage(error));
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

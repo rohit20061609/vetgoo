@@ -88,24 +88,40 @@ docker-compose down
 4. Configure project settings
 
 #### 3. Environment Variables
-Add to Vercel:
+Add these in **Vercel Project → Settings → Environment Variables** (Production):
 ```
 DATABASE_URL=postgresql://...
-NEXTAUTH_SECRET=your-secret
-ANTHROPIC_API_KEY=sk-...
+NEXTAUTH_SECRET=your-32-plus-char-secret
+NEXTAUTH_URL=https://vetgoo.in
+NEXT_PUBLIC_APP_URL=https://vetgoo.in
+ANTHROPIC_API_KEY=...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-STRIPE_SECRET_KEY=sk_live_...
-// ... other variables
+STRIPE_SECRET_KEY=...
+STRIPE_WEBHOOK_SECRET=...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=...
+UPLOADTHING_SECRET=...
+UPLOADTHING_APP_ID=...
+RESEND_API_KEY=...
 ```
 
 #### 4. Database Setup
-- Create PostgreSQL on Supabase
-- Use connection string in `DATABASE_URL`
-- Run migrations after deployment
+- Create a PostgreSQL database (Supabase/Neon/Railway are all fine)
+- Use the production connection string in `DATABASE_URL`
+- Ensure SSL is enabled in the connection string if required by your provider
+- Push schema once before first production launch:
+```bash
+npx prisma db push
+```
 
 #### 5. Deploy
-Automatic deployment on push to main branch.
+1. Set root directory to repository root
+2. Framework preset: **Next.js**
+3. Build command: `npm run build`
+4. Output directory: `.next`
+5. Deploy and wait for a successful build
+6. In Vercel Project → Domains, add and set primary domain to `vetgoo.in`
+7. Verify final production URL resolves as `https://vetgoo.in`
 
 ### Railway Deployment
 
